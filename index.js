@@ -2,13 +2,22 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 
 const app = express();
-const PORT = process.env.PORT || 3300;
+const PORT = process.env.PORT || 3000; // Adjusted port
 
-let browserInstance = puppeteer.launch({ headless: true });
+// Launch browser within a function to handle asynchronous setup
+async function startBrowser() {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'] // Necessary for running Puppeteer on Render
+  });
+  return browser;
+}
 
+// Route to fetch channel information
 app.get('/:channelName', async (req, res) => {
   try {
-    const page = await (await browserInstance).newPage();
+    const browserInstance = await startBrowser(); // Start a new browser instance for each request
+    const page = await browserInstance.newPage();
     const { channelName } = req.params;
     const url = `https://www.youtube.com/results?search_query=@${channelName}`;
 
@@ -22,7 +31,7 @@ app.get('/:channelName', async (req, res) => {
       subscribers: document.querySelector('#video-count')?.textContent.trim() || 'Subscribers count not found'
     }));
 
-    await page.close();
+    await browserInstance.close(); // Close the browser instance after use
     res.json(channelInfo);
   } catch (error) {
     console.error(error);
