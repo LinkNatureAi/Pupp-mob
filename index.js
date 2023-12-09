@@ -1,14 +1,16 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
+require('dotenv').config(); // Load environment variables from .env file
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Adjusted port
+const PORT = process.env.PORT || 3000;
+const HEADLESS = process.env.HEADLESS === 'true'; // Convert the string value to a boolean
 
 // Launch browser within a function to handle asynchronous setup
 async function startBrowser() {
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'] // Necessary for running Puppeteer on Render
+    headless: HEADLESS,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   return browser;
 }
@@ -16,7 +18,7 @@ async function startBrowser() {
 // Route to fetch channel information
 app.get('/:channelName', async (req, res) => {
   try {
-    const browserInstance = await startBrowser(); // Start a new browser instance for each request
+    const browserInstance = await startBrowser();
     const page = await browserInstance.newPage();
     const { channelName } = req.params;
     const url = `https://www.youtube.com/results?search_query=@${channelName}`;
@@ -31,7 +33,7 @@ app.get('/:channelName', async (req, res) => {
       subscribers: document.querySelector('#video-count')?.textContent.trim() || 'Subscribers count not found'
     }));
 
-    await browserInstance.close(); // Close the browser instance after use
+    await browserInstance.close();
     res.json(channelInfo);
   } catch (error) {
     console.error(error);
